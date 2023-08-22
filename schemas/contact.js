@@ -8,7 +8,7 @@ const name = Joi.string()
 
 const email = Joi.string()
   .email({minDomainSegments: 2})
-  .message('require: name@domen.domen')
+  .message('require: name@domain.domain')
 
 const phone = Joi.string()
   .pattern(/^[0-9]{10,15}/)
@@ -23,17 +23,21 @@ const post = Joi
     phone: phone.required(),
   })
 
+const key = Joi.string()
+
 const put = Joi
   .object({
     name,
     email,
     phone,
+    key,
   })
   .or('name', 'email', 'phone')
 
 const patch = Joi
   .object({
     favorite,
+    key,
   })
 
 module.exports = {
