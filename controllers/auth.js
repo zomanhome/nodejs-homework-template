@@ -1,5 +1,5 @@
 const errorWrapper = require("../helpers/error-wrapper")
-const {createUser, findUserByEmail, findUserById, updateSubscriptionById} = require("../models/users")
+const {createUser, findUserByEmail, findUserById, updateSubscriptionById, updateTokenById} = require("../models/users")
 const {comparePasswords} = require("../helpers/user-password-hash")
 const jwt = require("jsonwebtoken")
 require("dotenv").config()
@@ -40,6 +40,8 @@ const login = async (req, res) => {
   const payload = {id}
   const token = jwt.sign(payload, SECRET_KEY, {expiresIn: "12h"})
 
+  await updateTokenById(id, token)
+
   res.status(200).json({
     success: true,
     code: 200,
@@ -50,15 +52,15 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   const {id} = req.user
-  await findUserById(id)
+  await updateTokenById(id, "")
 
   res.status(204).end()
 }
 
 const current = async (req, res) => {
-  const {id} = req.user
-  const user = await findUserById(id)
-  const {name, email, subscription} = user
+  const {name, email, subscription, _id: userId} = req.user
+
+  const user = await findUserById(userId)
 
   res.status(200).json({
     success: true,

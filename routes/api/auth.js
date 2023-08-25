@@ -12,7 +12,7 @@ router.post("/login", validateSchema(user.login), login)
 
 router.post("/logout", auth, logout)
 
-router.post("/current", auth, current)
+router.get("/current", auth, current)
 
 router.patch("/subscription/:userId", auth, validateSchema(user.subscription), updateSubscription)
 
