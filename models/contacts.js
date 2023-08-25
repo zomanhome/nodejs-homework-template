@@ -1,7 +1,12 @@
-const Contact = require('../models/mongo')
+const Contact = require("../models/contact")
 
-const listContacts = async () =>
-  Contact.find()
+const listContacts = async ({owner, skip, limit, favorite}) =>
+  favorite
+    ? Contact.find({owner, favorite}).skip(skip).limit(limit)
+    : Contact.find({owner}).skip(skip).limit(limit)
+
+const countContacts = async ({owner}) =>
+  Contact.count({owner})
 
 const getContactById = async (contactId) =>
   Contact.find({_id: contactId})
@@ -22,4 +27,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  countContacts,
 }

@@ -1,11 +1,11 @@
 const {mongoose} = require('mongoose')
-require('dotenv').config()
+require("dotenv").config()
 
 mongoose.Promise = global.Promise
 
 const mongoCloud = async () => {
-  if (process.env.NODE_ENV !== 'production') {
-    mongoose.set('debug', true)
+  if (process.env.NODE_ENV !== "production") {
+    mongoose.set("debug", true)
   }
 
   try {
