@@ -16,10 +16,14 @@ const updateSubscriptionById = async (id, subscription) =>
 const updateTokenById = async (id, token) =>
   User.findByIdAndUpdate({_id: id}, {token})
 
+const updateAvatarById = async (id, avatarURL) =>
+  User.findByIdAndUpdate({_id: id}, {avatarURL})
+
 module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
   updateSubscriptionById,
   updateTokenById,
+  updateAvatarById,
 }
