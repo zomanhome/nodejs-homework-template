@@ -1,9 +1,20 @@
 const errorWrapper = require("../helpers/error-wrapper")
-const {createUser, findUserByEmail, findUserById, updateSubscriptionById, updateTokenById} = require("../models/users")
+const {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  updateSubscriptionById,
+  updateTokenById,
+  updateAvatarById,
+} = require("../models/users")
 const {comparePasswords} = require("../helpers/user-password-hash")
 const jwt = require("jsonwebtoken")
 require("dotenv").config()
 const HttpError = require("../helpers/HttpError")
+const uploadFile = require("../db/cloudinary")
+const fs = require("fs/promises")
+const gravatar = require("gravatar")
+const Jimp = require("jimp")
 
 const register = async (req, res) => {
   const user = await findUserByEmail(req.body.email)
@@ -12,7 +23,8 @@ const register = async (req, res) => {
     throw HttpError(409)
   }
 
-  const {email} = await createUser(req.body)
+  const avatarURL = await gravatar.url(req.body.email)
+  const {email} = await createUser({...req.body, avatarURL})
 
   res.status(201).json({
     success: true,
@@ -24,21 +36,18 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const user = await findUserByEmail(req.body.email)
+  const error = HttpError(401, "Email or password incorrect")
 
-  if (!user) {
-    throw HttpError(401, "Email or password incorrect")
-  }
+  if (!user) throw error
 
   const {password, id} = user
   const isEqual = await comparePasswords(req.body.password, password)
 
-  if (!isEqual) {
-    throw HttpError(401, "Email or password incorrect")
-  }
+  if (!isEqual) throw error
 
   const {SECRET_KEY} = process.env
   const payload = {id}
-  const token = jwt.sign(payload, SECRET_KEY, {expiresIn: "12h"})
+  const token = jwt.sign(payload, SECRET_KEY, {expiresIn: "23h"})
 
   await updateTokenById(id, token)
 
@@ -58,15 +67,15 @@ const logout = async (req, res) => {
 }
 
 const current = async (req, res) => {
-  const {name, email, subscription, _id: userId} = req.user
+  const {name, email, subscription, _id: userId, avatarURL} = req.user
 
-  const user = await findUserById(userId)
+  await findUserById(userId)
 
   res.status(200).json({
     success: true,
     code: 200,
     message: "Current user",
-    data: {name, email, subscription},
+    data: {name, email, subscription, avatarURL, id: userId},
   })
 }
 
@@ -83,10 +92,30 @@ const updateSubscription = async (req, res) => {
   })
 }
 
+const updateUserAvatar = async (req, res) => {
+  const {path} = req.file
+
+  const avatar = await Jimp.read(path)
+  await avatar.resize(128, 128).write(path)
+
+  const result = await uploadFile(path)
+  await updateAvatarById(req.body.id, result.url)
+
+  res.status(200).json({
+    success: true,
+    code: 200,
+    message: "Avatar updated",
+    data: {avatarURL: result.url},
+  })
+
+  await fs.unlink(path)
+}
+
 module.exports = {
   register: errorWrapper(register),
   login: errorWrapper(login),
   logout: errorWrapper(logout),
   current: errorWrapper(current),
   updateSubscription: errorWrapper(updateSubscription),
+  updateUserAvatar: errorWrapper(updateUserAvatar),
 }

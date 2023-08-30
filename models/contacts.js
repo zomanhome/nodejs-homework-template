@@ -2,11 +2,13 @@ const Contact = require("../models/contact")
 
 const listContacts = async ({owner, skip, limit, favorite}) =>
   favorite
-    ? Contact.find({owner, favorite}).skip(skip).limit(limit)
-    : Contact.find({owner}).skip(skip).limit(limit)
+    ? Contact.find({owner, favorite}).skip(skip).limit(limit).sort({createdAt: -1})
+    : Contact.find({owner}).skip(skip).limit(limit).sort({createdAt: -1})
 
-const countContacts = async ({owner}) =>
-  Contact.count({owner})
+const countContacts = async ({owner, favorite}) =>
+  favorite
+    ? Contact.count({owner, favorite})
+    : Contact.count({owner})
 
 const getContactById = async (contactId) =>
   Contact.find({_id: contactId})

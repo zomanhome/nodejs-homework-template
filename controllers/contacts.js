@@ -15,7 +15,7 @@ const get = async (req, res) => {
 
   const skip = page > 1 ? (page - 1) * limit : 0
 
-  const totalCount = await countContacts({owner})
+  const totalCount = await countContacts({owner, favorite})
 
   const data = await listContacts(
     {owner, skip, limit, favorite}
@@ -24,7 +24,7 @@ const get = async (req, res) => {
   res.status(200).json({
     success: true,
     code: 200,
-    data: {...data, totalCount},
+    data: {items: data, totalCount},
   })
 }
 

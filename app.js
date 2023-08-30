@@ -4,6 +4,7 @@ const cors = require("cors")
 const mongoCloud = require("./db/mongo-cloud")
 const contactsRouter = require("./routes/api/contacts")
 const authRouter = require("./routes/api/auth")
+const usersRouter = require("./routes/api/users")
 
 mongoCloud().then(({success}) => {
   success && console.log("Database connection successful")
@@ -16,8 +17,11 @@ const formatsLogger = app.get("env") === "development" ? "dev" : "short"
 app.use(logger(formatsLogger))
 app.use(cors())
 
+app.use(express.static("public"))
+
 app.use(express.json())
 
+app.use("/users", usersRouter)
 app.use("/api/auth", authRouter)
 app.use("/api/contacts", contactsRouter)
 
