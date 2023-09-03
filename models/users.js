@@ -19,6 +19,15 @@ const updateTokenById = async (id, token) =>
 const updateAvatarById = async (id, avatarURL) =>
   User.findByIdAndUpdate({_id: id}, {avatarURL})
 
+const findByVerificationToken = async (verificationToken) =>
+  User.findOne({verificationToken})
+
+const updateVerificationSuccess = async (id) =>
+  User.findByIdAndUpdate({_id: id}, {verificationToken: null, verify: true})
+
+const updateVerificationTokenById = async (id, verificationToken) =>
+  User.findByIdAndUpdate({_id: id}, {verificationToken})
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -26,4 +35,7 @@ module.exports = {
   updateSubscriptionById,
   updateTokenById,
   updateAvatarById,
+  findByVerificationToken,
+  updateVerificationSuccess,
+  updateVerificationTokenById,
 }
