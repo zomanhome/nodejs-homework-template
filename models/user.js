@@ -20,7 +20,7 @@ const user = new Schema(
     subscription: {
       type: String,
       enum: ["starter", "pro", "business"],
-      default: "starter"
+      default: "starter",
     },
     token: {
       type: String,
@@ -28,8 +28,16 @@ const user = new Schema(
     },
     avatarURL: {
       type: String,
-      default: ""
+      default: "",
     },
+    verify: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      required: [true, "Verification token required"],
+    }
   },
   {
     versionKey: false,

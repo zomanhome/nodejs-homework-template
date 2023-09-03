@@ -6,6 +6,9 @@ const {
   updateSubscriptionById,
   updateTokenById,
   updateAvatarById,
+  findByVerificationToken,
+  updateVerificationSuccess,
+  updateVerificationTokenById,
 } = require("../models/users")
 const {comparePasswords} = require("../helpers/user-password-hash")
 const jwt = require("jsonwebtoken")
@@ -15,22 +18,85 @@ const uploadFile = require("../db/cloudinary")
 const fs = require("fs/promises")
 const gravatar = require("gravatar")
 const Jimp = require("jimp")
+const sgMail = require("../db/sendgrid")
+const crypto = require("crypto")
 
-const register = async (req, res) => {
-  const user = await findUserByEmail(req.body.email)
+const baseUrl = process.env.NODE_ENV === "development"
+  ? "http://localhost:8080/"
+  : "https://zomanhome.github.io/contacts-manager/"
 
-  if (user) {
-    throw HttpError(409)
-  }
+const register = async (req, res, next) => {
+  const {email: userEmail} = req.body
+  const user = await findUserByEmail(userEmail)
 
-  const avatarURL = await gravatar.url(req.body.email)
-  const {email} = await createUser({...req.body, avatarURL})
+  if (user) throw HttpError(409)
 
-  res.status(201).json({
+  const avatarURL = await gravatar.url(userEmail)
+  const verificationToken = crypto.randomBytes(16).toString("hex")
+
+  sgMail.send({
+    from: "zomanhome@gmail.com",
+    to: userEmail,
+    subject: "Email verification",
+    html: `<a href="${baseUrl}${verificationToken}">Click to verify your email in Contacts Manager</a>`,
+  })
+    .then(async () => {
+      const {email} = await createUser({...req.body, avatarURL, verificationToken})
+
+      res.status(201).json({
+        success: true,
+        code: 201,
+        message: "User registered successfully",
+        data: email,
+      })
+    })
+    .catch(e => next(e))
+}
+
+const verify = async (req, res, next) => {
+  const {email} = req.body
+  if (!email) throw HttpError(400, "Missing required email")
+
+  const user = await findUserByEmail(email)
+  if (!user) throw HttpError(404, "Not found")
+
+  const {verify, _id: id} = user
+  if (verify) throw HttpError(400, "Verification has already been passed")
+
+  const verificationToken = crypto.randomBytes(16).toString("hex")
+
+  sgMail.send({
+    from: "zomanhome@gmail.com",
+    to: email,
+    subject: "Email verification",
+    html: `<a href="${baseUrl}${verificationToken}">Click to verify your email in Contacts Manager</a>`,
+  })
+    .then(async () => {
+      await updateVerificationTokenById(id, verificationToken)
+
+      res.status(201).json({
+        success: true,
+        code: 201,
+        message: "Token update successfully",
+      })
+    })
+    .catch(e => next(e))
+}
+
+const verifyEmail = async (req, res) => {
+  const {verificationToken} = req.params
+  const user = await findByVerificationToken(verificationToken)
+
+  if (!user) throw HttpError(404, "User not found")
+
+  const {_id: id} = user
+
+  await updateVerificationSuccess(id)
+
+  res.status(200).json({
     success: true,
-    code: 201,
-    message: "User registered successfully",
-    data: email,
+    code: 200,
+    message: "Verification successful",
   })
 }
 
@@ -40,10 +106,11 @@ const login = async (req, res) => {
 
   if (!user) throw error
 
-  const {password, id} = user
+  const {password, id, verify} = user
   const isEqual = await comparePasswords(req.body.password, password)
 
   if (!isEqual) throw error
+  if (!verify) throw HttpError(404, "Please verify email")
 
   const {SECRET_KEY} = process.env
   const payload = {id}
@@ -118,4 +185,6 @@ module.exports = {
   current: errorWrapper(current),
   updateSubscription: errorWrapper(updateSubscription),
   updateUserAvatar: errorWrapper(updateUserAvatar),
+  verifyEmail: errorWrapper(verifyEmail),
+  verify: errorWrapper(verify),
 }
