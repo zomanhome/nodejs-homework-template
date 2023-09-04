@@ -22,8 +22,8 @@ const sgMail = require("../db/sendgrid")
 const crypto = require("crypto")
 
 const baseUrl = process.env.NODE_ENV === "development"
-  ? "http://localhost:8080/"
-  : "https://zomanhome.github.io/contacts-manager/"
+  ? "http://localhost:8080"
+  : "https://zomanhome.github.io/contacts-manager"
 
 const register = async (req, res, next) => {
   const {email: userEmail} = req.body
@@ -38,7 +38,7 @@ const register = async (req, res, next) => {
     from: "zomanhome@gmail.com",
     to: userEmail,
     subject: "Email verification",
-    html: `<a href="${baseUrl}${verificationToken}">Click to verify your email in Contacts Manager</a>`,
+    html: `<a href="${baseUrl}?verificationToken=${verificationToken}">Click to verify your email in Contacts Manager</a>`,
   })
     .then(async () => {
       const {email} = await createUser({...req.body, avatarURL, verificationToken})
@@ -69,7 +69,7 @@ const verify = async (req, res, next) => {
     from: "zomanhome@gmail.com",
     to: email,
     subject: "Email verification",
-    html: `<a href="${baseUrl}${verificationToken}">Click to verify your email in Contacts Manager</a>`,
+    html: `<a href="${baseUrl}?verificationToken=${verificationToken}">Click to verify your email in Contacts Manager</a>`,
   })
     .then(async () => {
       await updateVerificationTokenById(id, verificationToken)
@@ -77,7 +77,7 @@ const verify = async (req, res, next) => {
       res.status(201).json({
         success: true,
         code: 201,
-        message: "Token update successfully",
+        message: "Verification token send to email successfully",
       })
     })
     .catch(e => next(e))
