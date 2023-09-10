@@ -5,6 +5,8 @@ const mongoCloud = require("./db/mongo-cloud")
 const contactsRouter = require("./routes/api/contacts")
 const authRouter = require("./routes/api/auth")
 const usersRouter = require("./routes/api/users")
+const {createServer} = require("http")
+const {Server} = require("socket.io")
 
 mongoCloud().then(({success}) => {
   success && console.log("Database connection successful")
@@ -42,5 +44,33 @@ app.use((err, req, res, next) => {
     message,
   })
 })
+
+const httpServer = createServer(app)
+const io = new Server(httpServer, { /* options */})
+io.sockets.on("connection", (client) => {
+  const broadcast = (event, data) => {
+    client.emit(event, data)
+    client.broadcast.emit(event, data)
+  }
+
+  broadcast("user", users)
+
+  client.on("message", message => {
+    if (users[client.id] !== message.name) {
+      users[client.id] = message.name
+      broadcast("user", users)
+    }
+    broadcast("message", message)
+  })
+
+  client.on("disconnect", () => {
+    delete users[client.id]
+    client.broadcast.emit("user", users)
+  })
+})
+httpServer.listen(3001)
+
+const users = {}
+
 
 module.exports = app
