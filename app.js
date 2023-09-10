@@ -46,7 +46,9 @@ app.use((err, req, res, next) => {
 })
 
 const httpServer = createServer(app)
-const io = new Server(httpServer, { /* options */})
+const io = new Server(httpServer)
+const users = {}
+
 io.sockets.on("connection", (client) => {
   const broadcast = (event, data) => {
     client.emit(event, data)
@@ -69,8 +71,5 @@ io.sockets.on("connection", (client) => {
   })
 })
 httpServer.listen(3001)
-
-const users = {}
-
 
 module.exports = app
